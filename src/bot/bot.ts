@@ -11,6 +11,8 @@ import { processPurchase } from './handlers/transaction';
 import { handleReceiptUpload } from './handlers/payment';
 import { handleTicketMessage } from './handlers/ticket-logic';
 import { handleFreeTrial } from './handlers/trial';
+import { admins } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 export function createBot(token: string, db: any, env: any) {
   const bot = new Bot<MyContext>(token);
@@ -18,6 +20,15 @@ export function createBot(token: string, db: any, env: any) {
   bot.use(async (ctx, next) => {
     ctx.db = db;
     ctx.env = env;
+
+    // Check if user is admin once per request
+    if (ctx.from) {
+        const admin = await ctx.db.query.admins.findFirst({
+            where: eq(admins.telegramId, ctx.from.id)
+        });
+        ctx.isAdmin = !!admin;
+    }
+
     await next();
   });
 
@@ -25,7 +36,7 @@ export function createBot(token: string, db: any, env: any) {
   bot.command('start', handleStart);
   bot.on('message:contact', handleContact);
 
-  // Middlewares for Users
+  // Middlewares for Users (skip if admin)
   bot.use(authMiddleware);
   bot.use(phoneVerificationMiddleware);
 
@@ -69,9 +80,6 @@ export function createBot(token: string, db: any, env: any) {
         await handleWalletBalance(ctx);
     } else if (data === 'orders_history') {
         await ctx.reply('⏳ این بخش به زودی فعال خواهد شد.');
-    } else if (data === 'get_link_') {
-        const orderId = parseInt(data.split('_')[2]);
-        await handleOrderDetails(ctx, orderId);
     } else if (data.startsWith('admin_')) {
         return adminMiddleware(ctx, async () => {
             if (data === 'admin_menu') await handleAdminMenu(ctx);

@@ -2,6 +2,7 @@ import { MyContext } from '../context';
 import { orders, users, panels as panelsTable } from '../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { MarzbanPanel } from '../../panels/marzban';
+import { XUI3Panel } from '../../panels/3x-ui';
 
 export async function handleFreeTrial(ctx: MyContext) {
     if (!ctx.from) return;
@@ -32,10 +33,16 @@ export async function handleFreeTrial(ctx: MyContext) {
             return ctx.reply('❌ در حال حاضر امکان صدور اکانت تست وجود ندارد.');
         }
 
-        const panel = new MarzbanPanel(panelData.apiUrl, {
-            username: panelData.username,
-            password: panelData.password
-        });
+        let panel;
+        if (panelData.type === 'marzban') {
+            panel = new MarzbanPanel(panelData.apiUrl, { username: panelData.username || '', password: panelData.password || '' });
+        } else if (panelData.type === '3x-ui') {
+            panel = new XUI3Panel(panelData.apiUrl, { username: panelData.username || '', password: panelData.password || '' });
+        }
+
+        if (!panel) {
+            throw new Error('Panel type not supported for trial');
+        }
 
         const vpnUser = await panel.createUser({
             remark: `trial_${ctx.from.id}`,
@@ -63,6 +70,7 @@ export async function handleFreeTrial(ctx: MyContext) {
 `, { parse_mode: 'HTML' });
 
     } catch (error) {
+        console.error(error);
         await ctx.reply('❌ متأسفانه خطایی در صدور اکانت تست رخ داد.');
     }
 }

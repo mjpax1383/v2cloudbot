@@ -4,7 +4,7 @@ import { users } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function authMiddleware(ctx: MyContext, next: NextFunction) {
-  if (!ctx.from) return next();
+  if (!ctx.from || ctx.isAdmin) return next();
 
   // Fetch channel ID from settings or use default
   const channelSetting = await ctx.db.query.settings.findFirst({
@@ -21,14 +21,14 @@ export async function authMiddleware(ctx: MyContext, next: NextFunction) {
     }
   } catch (e: any) {
     if (e.description && e.description.includes('chat not found')) {
-        console.error('Channel not found. Please check channelId.');
+        console.error(`Channel ${channelId} not found. Please check channelId in settings.`);
     }
   }
   return next();
 }
 
 export async function phoneVerificationMiddleware(ctx: MyContext, next: NextFunction) {
-  if (!ctx.from) return next();
+  if (!ctx.from || ctx.isAdmin) return next();
 
   const user = await ctx.db.query.users.findFirst({
       where: eq(users.telegramId, ctx.from.id)

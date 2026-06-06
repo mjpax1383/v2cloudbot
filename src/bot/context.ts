@@ -8,4 +8,5 @@ export interface MyContext extends Context {
     BOT_TOKEN: string;
     DB: D1Database;
   };
+  isAdmin?: boolean;
 }
