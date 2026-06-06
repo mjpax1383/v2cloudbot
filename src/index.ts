@@ -13,7 +13,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 app.post('/webhook', async (c) => {
   const db = drizzle(c.env.DB, { schema });
-  const bot = createBot(c.env.BOT_TOKEN, db);
+  const bot = createBot(c.env.BOT_TOKEN, db, c.env);
 
   return webhookCallback(bot, 'hono')(c);
 });

@@ -1,32 +1,42 @@
-import { Context, InlineKeyboard } from 'grammy';
+import { InlineKeyboard } from 'grammy';
 import { purchaseKeyboard } from '../keyboards';
+import { products, users } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { MyContext } from '../context';
 
-export async function handlePurchaseMenu(ctx: Context) {
+export async function handlePurchaseMenu(ctx: MyContext) {
   await ctx.reply('لطفاً دسته‌بندی مورد نظر خود را انتخاب کنید:', {
     reply_markup: purchaseKeyboard,
   });
 }
 
-export async function handleCategorySelection(ctx: Context) {
-    // In a real app, fetch products from D1 based on category
-    const products = [
-        { id: 1, name: 'سرویس ۱۰ گیگ - یک ماهه', price: 50000 },
-        { id: 2, name: 'سرویس ۲۰ گیگ - یک ماهه', price: 90000 },
-    ];
+export async function handleCategorySelection(ctx: MyContext) {
+    const productList = await ctx.db.select().from(products).where(eq(products.isActive, true));
+
+    if (productList.length === 0) {
+        return ctx.editMessageText('❌ در حال حاضر هیچ محصولی موجود نیست.');
+    }
 
     const keyboard = new InlineKeyboard();
-    products.forEach(p => {
+    productList.forEach((p: any) => {
         keyboard.text(`${p.name} - ${p.price} تومان`, `buy_${p.id}`).row();
     });
-    keyboard.text('🔙 بازگشت', 'back_to_categories');
+    keyboard.text('🔙 بازگشت', 'manage_services');
 
     await ctx.editMessageText('سرویس مورد نظر خود را انتخاب کنید:', {
         reply_markup: keyboard,
     });
 }
 
-export async function handleWalletBalance(ctx: Context) {
-    const balance = 0; // Fetch from D1
+export async function handleWalletBalance(ctx: MyContext) {
+    let balance = 0;
+    if (ctx.from) {
+        const user = await ctx.db.query.users.findFirst({
+            where: eq(users.telegramId, ctx.from.id)
+        });
+        balance = user?.balance || 0;
+    }
+
     const text = `
 💰 موجودی کیف پول شما: ${balance} تومان
 

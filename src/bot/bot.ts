@@ -12,11 +12,12 @@ import { handleReceiptUpload } from './handlers/payment';
 import { handleTicketMessage } from './handlers/ticket-logic';
 import { handleFreeTrial } from './handlers/trial';
 
-export function createBot(token: string, db: any) {
+export function createBot(token: string, db: any, env: any) {
   const bot = new Bot<MyContext>(token);
 
   bot.use(async (ctx, next) => {
     ctx.db = db;
+    ctx.env = env;
     await next();
   });
 
@@ -24,7 +25,7 @@ export function createBot(token: string, db: any) {
   bot.command('start', handleStart);
   bot.on('message:contact', handleContact);
 
-  // Middlewares for Users (excluding admin commands if needed, but usually applied to all)
+  // Middlewares for Users
   bot.use(authMiddleware);
   bot.use(phoneVerificationMiddleware);
 
@@ -43,7 +44,7 @@ export function createBot(token: string, db: any) {
     await next();
   });
 
-  // Admin Commands - Protected by adminMiddleware
+  // Admin Commands
   bot.command('admin', adminMiddleware, handleAdminMenu);
 
   // Callback Queries
@@ -64,10 +65,14 @@ export function createBot(token: string, db: any) {
     } else if (data.startsWith('manage_order_')) {
         const orderId = parseInt(data.split('_')[2]);
         await handleOrderDetails(ctx, orderId);
-    } else if (data === 'recharge_wallet' || data === 'recharge_online') {
+    } else if (data === 'recharge_wallet' || data === 'recharge_online' || data === 'recharge_c2c') {
         await handleWalletBalance(ctx);
+    } else if (data === 'orders_history') {
+        await ctx.reply('⏳ این بخش به زودی فعال خواهد شد.');
+    } else if (data === 'get_link_') {
+        const orderId = parseInt(data.split('_')[2]);
+        await handleOrderDetails(ctx, orderId);
     } else if (data.startsWith('admin_')) {
-        // Protect all admin callbacks
         return adminMiddleware(ctx, async () => {
             if (data === 'admin_menu') await handleAdminMenu(ctx);
             if (data === 'admin_products') await handleAdminProducts(ctx);

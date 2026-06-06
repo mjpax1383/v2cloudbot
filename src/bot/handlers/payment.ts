@@ -13,7 +13,8 @@ export async function handleReceiptUpload(ctx: MyContext) {
 
     const photo = ctx.message.photo[ctx.message.photo.length - 1];
     const file = await ctx.api.getFile(photo.file_id);
-    const receiptUrl = `https://api.telegram.org/file/bot${ctx.api.token}/${file.file_path}`;
+    // Use token from context env
+    const receiptUrl = `https://api.telegram.org/file/bot${ctx.env.BOT_TOKEN}/${file.file_path}`;
 
     await ctx.db.insert(payments).values({
         userId: user.id,
