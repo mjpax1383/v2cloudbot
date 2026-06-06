@@ -1,0 +1,15 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "vpn-bot-cf-worker"
+main = "src/index.ts"
+compatibility_date = "2024-12-18"
+
+[vars]
+# BOT_TOKEN = "" # Set via wrangler secret put BOT_TOKEN
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vpn_bot_db"
+database_id = "YOUR_DATABASE_ID"
+
+[observability]
+enabled = true
